@@ -1,0 +1,24 @@
+{
+  "name": "sl2-where",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "dependencies": {
+    "request": "^2.67.0",
+    "twitter": "^1.2.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IceSofticon30th/sl2-where.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/IceSofticon30th/sl2-where/issues"
+  },
+  "homepage": "https://github.com/IceSofticon30th/sl2-where#readme"
+}
