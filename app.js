@@ -68,7 +68,7 @@ function fetch(keyword, callback) {
             _tweets = _tweets.concat(tweets.statuses);
             for (var i = 0; i < tweets.statuses.length; i++) {
                 var id = tweets.statuses[i].id_str;
-                if (bigint(max_id).compare(id) == 1) {
+                if (bigint(max_id).grater(id)) {
                     max_id = id;
                 }
                 console.log(max_id);
