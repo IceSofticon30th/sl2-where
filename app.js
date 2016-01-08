@@ -2,6 +2,8 @@ var Twitter = require('twitter');
 var tokens = require('./tokens.json');
 var qs = require('querystring');
 var request = require('request');
+var async = require('async');
+var bigint = require('big-integer');
  
 var client = new Twitter({
   consumer_key: tokens.twitter.consumer_key,
@@ -21,7 +23,13 @@ function extractKeyphrase(sentence, callback) {
     var uri = api + '?' + query;
     
     request(uri, function (err, response, body) {
-        var res = JSON.parse(body);
+        if (err) console.error(err);
+        var res;
+        try {
+            res = JSON.parse(body);
+        } catch (e) {
+            res = {};
+        }
         if (typeof callback == 'function') callback(res);
     });
 }
@@ -42,22 +50,30 @@ function extractPropur(phrase, callback) {
 function fetch(keyword, callback) {
     var params = {
         q: keyword + ' exclude:retweets',
-        //until: '2015-12-27',
+        // until: '2015-12-27',
         count: 100,
         result_type: 'recent'
     };
     
     var count = 0;
-    var max = 1;
+    var max = 2;
     var _tweets = [];
+    var max_id = '';
     
     _fetch();
     
     function _fetch() {
         client.get('search/tweets', params, function(error, tweets, response) {
+            max_id = (max_id == '') ? tweets.statuses[0].id_str : max_id;
             _tweets = _tweets.concat(tweets.statuses);
-            var next_results = tweets.search_metadata.next_results;
-            params = qs.parse(next_results.substring(1));
+            for (var i = 0; i < tweets.statuses.length; i++) {
+                var id = tweets.statuses[i].id_str;
+                if (bigint(max_id).compare(id) == 1) {
+                    max_id = id;
+                }
+                console.log(max_id);
+            }
+            params.max_id = max_id;
             count++;
             
             if (count < max) {
@@ -70,12 +86,15 @@ function fetch(keyword, callback) {
 }
 
 fetch('壊死ニキ', function (tweets) {
-    var texts = '';
-    tweets.forEach(function (tweet, index) {
-        texts += tweet.text + '\n\n';
-    });
-    extractPropur(texts, function (result) {
-        console.log(texts);
-        console.log(result.ne_list);
-    });
+    async.forEachOfLimit(tweets, 3,
+        function (tweet, index, callback) {
+            extractPropur(tweet.text, function (result) {
+                console.log(result);
+                callback(null);
+            });
+        },
+        function DONE() {
+            console.log('やったぜ。');
+        }
+    );
 });
