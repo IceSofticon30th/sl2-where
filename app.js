@@ -5,6 +5,9 @@ var request = require('request');
 var async = require('async');
 var bigint = require('big-integer');
  
+ // 控え
+ // "appid": "0d74a7fe978e5c07661b43a0bf3f18efdcf546105fa67371822d77a08de97554",
+ 
 var client = new Twitter({
   consumer_key: tokens.twitter.consumer_key,
   consumer_secret: tokens.twitter.consumer_secret,
@@ -18,7 +21,8 @@ function extractKeyphrase(sentence, callback) {
         output: 'json',
         sentence: sentence
     }
-    var api = 'http://jlp.yahooapis.jp/KeyphraseService/V1/extract';
+    // var api = 'http://jlp.yahooapis.jp/KeyphraseService/V1/extract';
+    var api = 'http://jlp.yahooapis.jp/MAService/V1/parse';
     var query = qs.stringify(params, '&', '=');
     var uri = api + '?' + query;
     
@@ -38,7 +42,7 @@ function extractPropur(phrase, callback) {
     var params = {
         app_id: tokens.goo.appid,
         sentence: phrase,
-        class_filter: 'LOC|ART'
+        class_filter: 'LOC'
     }
     var api = 'https://labs.goo.ne.jp/api/entity';
     
@@ -50,7 +54,7 @@ function extractPropur(phrase, callback) {
 function fetch(keyword, callback) {
     var params = {
         q: keyword + ' exclude:retweets',
-        // until: '2015-12-27',
+        until: '2015-12-26',
         count: 100,
         result_type: 'recent'
     };
@@ -68,7 +72,7 @@ function fetch(keyword, callback) {
             _tweets = _tweets.concat(tweets.statuses);
             for (var i = 0; i < tweets.statuses.length; i++) {
                 var id = tweets.statuses[i].id_str;
-                if (bigint(max_id).grater(id)) {
+                if (bigint(max_id).greater(id)) {
                     max_id = id;
                 }
                 console.log(max_id);
@@ -85,10 +89,11 @@ function fetch(keyword, callback) {
     }
 }
 
-fetch('壊死ニキ', function (tweets) {
+fetch('(に いた) OR (で 発見) OR (で 遭遇)', function (tweets) {
     async.forEachOfLimit(tweets, 3,
         function (tweet, index, callback) {
             extractKeyphrase(tweet.text, function (result) {
+                console.log(tweet.text);
                 console.log(result);
                 callback(null);
             });
