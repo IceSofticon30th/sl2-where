@@ -8,12 +8,23 @@ var Datastore = require('nedb');
 
 var db = new Datastore({filename: __dirname + '/tweets.db', autoload: true});
  
+ // 控え
+ // "appid": "0d74a7fe978e5c07661b43a0bf3f18efdcf546105fa67371822d77a08de97554",
+ 
 var client = new Twitter({
   consumer_key: tokens.twitter.consumer_key,
   consumer_secret: tokens.twitter.consumer_secret,
   access_token: tokens.twitter.access_token_key,
   access_token_secret: tokens.twitter.access_token_secret,
-  app_only_auth: false
+  //app_only_auth: false
+});
+
+client = new Twitter({
+  consumer_key: 'MNZ0itTqHiqQVyCcOPsvmmjVP',
+  consumer_secret: 'NniaoOBEmVOWt1UO1qJYRMs7Kb7oFTYgpFlASwOyeVSEvaQB8R',
+  access_token: '2274093522-PGq2CjZCCEqmkBNlPJBIv4ZjTuk05lW8fb6CO6B',
+  access_token_secret: '7pC0XDAEAFmmWLC0lyGl1PtPMvUk3q7r8Y7CaffXMnsZx'
+  //app_only_auth: false
 });
 
 function extractKeyphrase(sentence, callback) {
@@ -22,7 +33,8 @@ function extractKeyphrase(sentence, callback) {
         output: 'json',
         sentence: sentence
     }
-    var api = 'http://jlp.yahooapis.jp/KeyphraseService/V1/extract';
+    // var api = 'http://jlp.yahooapis.jp/KeyphraseService/V1/extract';
+    var api = 'http://jlp.yahooapis.jp/MAService/V1/parse';
     var query = qs.stringify(params, '&', '=');
     var uri = api + '?' + query;
     
@@ -42,7 +54,7 @@ function extractPropur(phrase, callback) {
     var params = {
         app_id: tokens.goo.appid,
         sentence: phrase,
-        class_filter: 'LOC|ART'
+        class_filter: 'LOC'
     }
     var api = 'https://labs.goo.ne.jp/api/entity';
     
@@ -54,13 +66,13 @@ function extractPropur(phrase, callback) {
 function fetch(keyword, callback) {
     var params = {
         q: keyword + ' exclude:retweets',
-       // until: '2015-12-27',
+        until: '2015-12-27',
         count: 100,
-        result_type: 'recent'
+        result_type: 'mixed'
     };
     
     var count = 0;
-    var max = 150;
+    var max = 100;
     var _tweets = [];
     var max_id = '';
     
@@ -75,19 +87,21 @@ function fetch(keyword, callback) {
                 if (bigint(max_id).greater(id)) {
                     max_id = id;
                 }
-                console.log(max_id);
+                console.log(count, max_id);
             }
             params.max_id = max_id;
             count++;
             
             if (count < max && tweets.statuses.length > 0) {
-                _fetch();
+                db.insert(tweets.statuses, function (err, newDoc) {
+                    _fetch();
+                });
             } else {
                 var _tweets_ = _tweets.concat().map(function (item) {
                     item._id = item.id_str;
                     return item;
                 });
-                db.insert(_tweets_, function (err, newDoc) {
+                db.insert(tweets.statuses, function (err, newDoc) {
                     if (typeof callback == 'function') callback(_tweets);
                 });
             }
@@ -95,14 +109,15 @@ function fetch(keyword, callback) {
     }
 }
 
-fetch('壊死ニキ', function (tweets) {
+fetch('(壊死ニキ いた) OR (壊死ニキ 発見) OR (壊死ニキ 遭遇)', function (tweets) {
     async.forEachOfLimit(tweets, 3,
         function (tweet, index, callback) {
             /*
             extractKeyphrase(tweet.text, function (result) {
+                console.log(tweet.text);
                 console.log(result);
-                callback(null);
             });*/
+            callback(null);
         },
         function DONE() {
             console.log('やったぜ。');
