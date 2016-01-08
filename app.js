@@ -1,9 +1,15 @@
-var Twitter = require('twitter');
+var Twitter = require('twit');
 var tokens = require('./tokens.json');
 var qs = require('querystring');
 var request = require('request');
 var async = require('async');
 var bigint = require('big-integer');
+var Datastore = require('nedb');
+
+var db = new Datastore({filename: __dirname + '/tweets.db', autoload: true});
+ 
+ // 控え
+ // "appid": "0d74a7fe978e5c07661b43a0bf3f18efdcf546105fa67371822d77a08de97554",
  
  // 控え
  // "appid": "0d74a7fe978e5c07661b43a0bf3f18efdcf546105fa67371822d77a08de97554",
@@ -11,8 +17,17 @@ var bigint = require('big-integer');
 var client = new Twitter({
   consumer_key: tokens.twitter.consumer_key,
   consumer_secret: tokens.twitter.consumer_secret,
-  access_token_key: tokens.twitter.access_token_key,
-  access_token_secret: tokens.twitter.access_token_secret
+  access_token: tokens.twitter.access_token_key,
+  access_token_secret: tokens.twitter.access_token_secret,
+  //app_only_auth: false
+});
+
+client = new Twitter({
+  consumer_key: 'MNZ0itTqHiqQVyCcOPsvmmjVP',
+  consumer_secret: 'NniaoOBEmVOWt1UO1qJYRMs7Kb7oFTYgpFlASwOyeVSEvaQB8R',
+  access_token: '2274093522-PGq2CjZCCEqmkBNlPJBIv4ZjTuk05lW8fb6CO6B',
+  access_token_secret: '7pC0XDAEAFmmWLC0lyGl1PtPMvUk3q7r8Y7CaffXMnsZx'
+  //app_only_auth: false
 });
 
 function extractKeyphrase(sentence, callback) {
@@ -54,13 +69,17 @@ function extractPropur(phrase, callback) {
 function fetch(keyword, callback) {
     var params = {
         q: keyword + ' exclude:retweets',
+<<<<<<< HEAD
         until: '2015-12-26',
+=======
+        until: '2015-12-27',
+>>>>>>> esc
         count: 100,
-        result_type: 'recent'
+        result_type: 'mixed'
     };
     
     var count = 0;
-    var max = 2;
+    var max = 100;
     var _tweets = [];
     var max_id = '';
     
@@ -68,35 +87,44 @@ function fetch(keyword, callback) {
     
     function _fetch() {
         client.get('search/tweets', params, function(error, tweets, response) {
-            max_id = (max_id == '') ? tweets.statuses[0].id_str : max_id;
+            max_id = (max_id == '' && tweets.statuses.length > 0) ? tweets.statuses[0].id_str : max_id;
             _tweets = _tweets.concat(tweets.statuses);
             for (var i = 0; i < tweets.statuses.length; i++) {
                 var id = tweets.statuses[i].id_str;
                 if (bigint(max_id).greater(id)) {
                     max_id = id;
                 }
-                console.log(max_id);
+                console.log(count, max_id);
             }
             params.max_id = max_id;
             count++;
             
-            if (count < max) {
-                _fetch();
+            if (count < max && tweets.statuses.length > 0) {
+                db.insert(tweets.statuses, function (err, newDoc) {
+                    _fetch();
+                });
             } else {
-                if (typeof callback == 'function') callback(_tweets);
+                var _tweets_ = _tweets.concat().map(function (item) {
+                    item._id = item.id_str;
+                    return item;
+                });
+                db.insert(tweets.statuses, function (err, newDoc) {
+                    if (typeof callback == 'function') callback(_tweets);
+                });
             }
         });
     }
 }
 
-fetch('(に いた) OR (で 発見) OR (で 遭遇)', function (tweets) {
+fetch('(壊死ニキ いた) OR (壊死ニキ 発見) OR (壊死ニキ 遭遇)', function (tweets) {
     async.forEachOfLimit(tweets, 3,
         function (tweet, index, callback) {
+            /*
             extractKeyphrase(tweet.text, function (result) {
                 console.log(tweet.text);
                 console.log(result);
-                callback(null);
-            });
+            });*/
+            callback(null);
         },
         function DONE() {
             console.log('やったぜ。');
