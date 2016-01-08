@@ -88,7 +88,7 @@ function fetch(keyword, callback) {
 fetch('壊死ニキ', function (tweets) {
     async.forEachOfLimit(tweets, 3,
         function (tweet, index, callback) {
-            extractPropur(tweet.text, function (result) {
+            extractKeyphrase(tweet.text, function (result) {
                 console.log(result);
                 callback(null);
             });
